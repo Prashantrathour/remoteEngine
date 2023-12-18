@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const authRoutes = require('./routes/Auth.routes');
 const developerRoutes = require('./routes/developers.routes');
+const clientRoutes = require('./routes/client.routes');
 const skillRoutes = require('./routes/skill.routes');
 const connection = require('./config/db');
 const cors=require("cors")
@@ -19,6 +20,7 @@ app.use(cors())
 // Routes
 app.use('/user', authRoutes);
 app.use('/developers', developerRoutes);
+app.use('/client', clientRoutes);
 app.use('/skills', skillRoutes);
 app.get("/",(req,res)=>{
     return res.send("Welcome Api working")
