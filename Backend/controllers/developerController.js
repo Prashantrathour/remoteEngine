@@ -5,6 +5,7 @@ const ProfessionalExperience = require("../models/professionalExperience.model")
 module.exports = {
   // Developer onboarding
   onboarding: async (req, res) => {
+    
     try {
       const {
         firstName,
@@ -13,6 +14,7 @@ module.exports = {
         skills,
         professionalExperiences,
         educationalExperiences,
+        email
       } = req.body;
       const existingDeveloper = await Developer.findOne({ user: req.userId });
 
@@ -28,6 +30,7 @@ module.exports = {
         firstName,
         lastName,
         phoneNumber,
+        email,
         skills,
         professionalExperiences,
         educationalExperiences,

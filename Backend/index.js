@@ -5,7 +5,7 @@ const authRoutes = require('./routes/Auth.routes');
 const developerRoutes = require('./routes/developers.routes');
 const skillRoutes = require('./routes/skill.routes');
 const connection = require('./config/db');
-
+const cors=require("cors")
 dotenv.config();
 
 const app = express();
@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
-
+app.use(cors())
 
 
 // Routes

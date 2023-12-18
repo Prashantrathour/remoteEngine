@@ -10,13 +10,13 @@ module.exports = {
 
       // Validate input
       if (!email || !password || !role) {
-        return res.status(400).json({ error: 'Please provide all required fields' });
+        return res.status(404).json({ error: 'Please provide all required fields' });
       }
 
       // Check if the user already exists
       const existingUser = await User.findOne({ email,role });
       if (existingUser) {
-        return res.status(400).json({ error: role+" "+'User already exists',role });
+        return res.status(404).json({ error: role+" "+'User already exists',role });
       }
 
       // Hash password
@@ -29,7 +29,7 @@ module.exports = {
       res.status(201).json({ message: role+" "+'registered successfully',role });
     } catch (error) {
      
-      res.status(500).json({ message:error});
+      res.status(404).json({ message:error});
     }
   },
 
@@ -40,23 +40,28 @@ module.exports = {
 
       // Find user
       const user = await User.findOne({ email,role });
+      console.log(user,"find")
       if (!user) {
-        return res.status(401).json({ error: 'Invalid credentials' });
+        return res.status(404).json({ error: 'Invalid credentials' });
       }
-
-      // Compare passwords
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-      if (!isPasswordValid) {
-        return res.status(401).json({ error });
-      }
+        try {
+          
+          const token = jwt.sign({ userId: user._id,email }, process.env.JWT_SECRET);
+    
+          const isPasswordValid = await bcrypt.compare(password, user.password);
+          if (!isPasswordValid) {
+            return res.status(404).json({ error :"Wrong Password"});
+          }
+          res.json({ token ,message:`${role} login successful`,role,email});
+        } catch (error) {
+          return res.status(404).json({ error: error });
+        }
+        // Compare passwords
 
       // Generate JWT token
-      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
-
-      res.json({ token ,message:`${role} login successful`,role});
     } catch (error) {
       console.error('Error logging in:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
+      res.status(404).json({ error: 'Internal Server Error' });
     }
   },
 };

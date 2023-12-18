@@ -5,6 +5,7 @@ const developerSchema = new mongoose.Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   phoneNumber: { type: String },
+  email:String,
   skills: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Skill' }],
   professionalExperiences: [
     {
