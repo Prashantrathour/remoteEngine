@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import DeveloperProfile from './DeveloperProfile'; // Import the DeveloperProfile component
+import { ImSpinner10 } from 'react-icons/im';
 
 const DevelopersList = () => {
   const [developers, setDevelopers] = useState([]);
@@ -25,7 +26,7 @@ const DevelopersList = () => {
     <div className="max-w-3xl mx-auto mt-8 p-4">
       <h1 className="text-3xl font-bold mb-4">Developers</h1>
       {loading ? (
-        <p className="text-gray-500">Loading...</p>
+        <p className="text-gray-500 text-center w-full border flex justify-center"><ImSpinner10 className='animate-spin text-4xl'/>Fething developers profile</p>
       ) : (
         <div>
           {developers.map((developer) => (

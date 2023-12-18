@@ -4,8 +4,11 @@ import Select from "react-select";
 import { useNavigate } from "react-router-dom";
 import {ToastContainer} from "react-toastify"
 import { errorAlert, succesAlert } from "../Components/Notification";
+import { ImSpinner9 } from "react-icons/im";
 const DeveloperOnboardingForm = () => {
   const navigate = useNavigate();
+  const [loading,setloading]=useState(false)
+  const [skillloading,skillsetloading]=useState(false)
   const authToken = localStorage.getItem("token");
   const authemail = localStorage.getItem("email");
   const [formData, setFormData] = useState({
@@ -30,18 +33,20 @@ const DeveloperOnboardingForm = () => {
   useEffect(() => {
     // Fetch predefined skills from the backend
 
-    if (!authToken && authemail) {
+    if (!authToken || !authemail) {
       return navigate("/login");
     }
     setFormData({ ...formData, email: authemail });
     const fetchSkills = async () => {
+      skillsetloading(true)
       try {
         const response = await axios.get(
           `${process.env.REACT_APP_API}/skills/get`
         );
-        console.log(response)
+        skillsetloading(true)
         setPredefinedSkills(response?.data?.skills);
       } catch (error) {
+        skillsetloading(false);
         console.error("Error fetching skills:", error);
       }
     };
@@ -78,13 +83,25 @@ const DeveloperOnboardingForm = () => {
   };
 
   const handleAddExperience = (section) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      [section]: [
-        ...prevData[section],
-        { companyName: "", techStack: "", skillsUsed: "", timePeriod: "" },
-      ],
-    }));
+    if(section=="professionalExperiences"){
+
+      setFormData((prevData) => ({
+        ...prevData,
+        [section]: [
+          ...prevData[section],
+          { companyName: "", techStack: "", skillsUsed: "", timePeriod: "" },
+        ],
+      }));
+    }else{
+      setFormData((prevData) => ({
+        ...prevData,
+        [section]: [
+          ...prevData[section],
+          { schoolName: "", degreeName: "", timePeriod: "" },
+        ],
+      }));
+
+    }
   };
 
   const handleRemoveExperience = (section, index) => {
@@ -108,41 +125,42 @@ const DeveloperOnboardingForm = () => {
       ),
     }));
   };
-
+// validate form fields
   const validateForm = () => {
-    // Iterate through the formData object
+    console.log(formData)
+  
     for (const category in formData) {
       if (Object.hasOwnProperty.call(formData, category)) {
         const categoryData = formData[category];
   
-        // Check if the category is an array
+     
         if (Array.isArray(categoryData)) {
-          // Iterate through the array
+       
           for (const item of categoryData) {
-            // Check each property of the array item
+           
             for (const property in item) {
               if (Object.hasOwnProperty.call(item, property) && item[property] === "") {
-                // If any property is empty, return false
+               
                 return false;
               }
             }
           }
         } else if (typeof categoryData === "object") {
-          // Check each property of the object
+       
           for (const property in categoryData) {
             if (Object.hasOwnProperty.call(categoryData, property) && categoryData[property] === "") {
-              // If any property is empty, return false
+              
               return false;
             }
           }
         } else if (categoryData === "") {
-          // If any property is empty, return false
+          
           return false;
         }
       }
     }
   
-    // If no empty properties are found, return true
+   
     return true;
   };
   
@@ -150,7 +168,6 @@ const DeveloperOnboardingForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Get the authentication token from local storage
 
     if (validateForm()) {
        console.log( {
@@ -164,7 +181,7 @@ const DeveloperOnboardingForm = () => {
         educationalExperiences: formData.educationalExperiences,
       }) 
       try {
-        // Make a POST request to the developer onboarding endpoint with the token
+       setloading(true)
         let res=await axios.post(
           `${process.env.REACT_APP_API}/developers/onboarding`,
           {
@@ -184,12 +201,12 @@ const DeveloperOnboardingForm = () => {
           }
         );
      succesAlert(res.data.message)
-     console.log(res)
-        // Redirect or show success message
-      } catch (error) {
-        console.error("Error during developer onboarding:", error);
-        errorAlert(error?.response?.data?.error)
-        // Handle errors, display messages, etc.
+     setloading(false)
+    } catch (error) {
+      console.error("Error during developer onboarding:", error);
+      errorAlert(error?.response?.data?.error||"something wrong")
+      setloading(false)
+      
       }
     } else {
       errorAlert("Please fill all details")
@@ -197,7 +214,7 @@ const DeveloperOnboardingForm = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto mt-8 p-6 bg-white rounded-md shadow-md">
+    <div className="max-w-3xl mx-auto mt-8 p-6 bg-white rounded-md shadow-xl border-orange-300 select-none">
         <ToastContainer/>
       <h2 className="text-2xl font-bold mb-4">Developer Onboarding</h2>
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -214,6 +231,7 @@ const DeveloperOnboardingForm = () => {
               type="text"
               id="firstName"
               name="firstName"
+              placeholder="FirstName"
               value={formData.firstName}
               onChange={(e) =>
                 handleChange(e, "personalInformation", 0, "firstName")
@@ -233,6 +251,7 @@ const DeveloperOnboardingForm = () => {
               type="text"
               id="lastName"
               name="lastName"
+              placeholder="LastName"
               value={formData.lastName}
               onChange={(e) =>
                 handleChange(e, "personalInformation", 0, "lastName")
@@ -250,6 +269,7 @@ const DeveloperOnboardingForm = () => {
             </label>
             <input
               type="text"
+              placeholder="Phone Number"
               id="phoneNumber"
               name="phoneNumber"
               value={formData.phoneNumber}
@@ -259,7 +279,7 @@ const DeveloperOnboardingForm = () => {
               className="block w-full border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring focus:border-indigo-300"
             />
           </div>
-          <div className="mb-4">
+          <div className="mb-4 cursor-not-allowed select-none">
             <label
               htmlFor="Email"
               className="block text-sm font-medium text-gray-600"
@@ -290,12 +310,12 @@ const DeveloperOnboardingForm = () => {
           />
         </div>
         {/* Professional Experiences */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-600">
+        <div className="mb-4 flex flex-col gap-5">
+          <label className="block text-sm font-medium text-gray-600 p-4 bg-yellow-200">
             Professional Experiences
           </label>
           {formData.professionalExperiences.map((experience, index) => (
-            <div key={index} className="space-y-2 mb-2">
+            <div key={index} className="space-y-2 mb-2 border border-lime-300  shadow-lg p-3 rounded-2xl transition-all">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="mb-4">
                   <label
@@ -309,6 +329,7 @@ const DeveloperOnboardingForm = () => {
                     id={`companyName${index}`}
                     name={`companyName${index}`}
                     value={experience.companyName}
+                    placeholder="Enter company name"
                     onChange={(e) =>
                       handleChange(
                         e,
@@ -329,6 +350,7 @@ const DeveloperOnboardingForm = () => {
                   </label>
                   <input
                     type="text"
+                    placeholder="Enter your tech stack (,)"
                     id={`techStack${index}`}
                     name={`techStack${index}`}
                     value={experience.techStack}
@@ -370,6 +392,7 @@ const DeveloperOnboardingForm = () => {
                   Time Period
                 </label>
                 <input
+                placeholder="Enter your Time Period"
                   type="text"
                   id={`timePeriod${index}`}
                   name={`timePeriod${index}`}
@@ -402,18 +425,18 @@ const DeveloperOnboardingForm = () => {
           <button
             type="button"
             onClick={() => handleAddExperience("professionalExperiences")}
-            className="text-sm text-indigo-600 hover:underline focus:outline-none"
+            className="text-sm text-indigo-600 hover:underline focus:outline-none bg-green-300 py-4 rounded-lg"
           >
             Add Experience
           </button>
         </div>
         {/* Educational Experiences */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-600">
+        <div className="mb-4  flex gap-5 flex-col">
+          <label className="block text-sm font-medium text-gray-600 p-4 bg-yellow-200">
             Educational Experiences
           </label>
           {formData.educationalExperiences.map((experience, index) => (
-            <div key={index} className="space-y-2 mb-2">
+            <div key={index} className="space-y-2 mb-2 border border-lime-300  shadow-lg p-3 rounded-2xl">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="mb-4">
                   <label
@@ -427,6 +450,7 @@ const DeveloperOnboardingForm = () => {
                     id={`degreeName${index}`}
                     name={`degreeName${index}`}
                     value={experience.degreeName}
+                    placeholder="Enter your degree"
                     onChange={(e) =>
                       handleChange(
                         e,
@@ -450,6 +474,7 @@ const DeveloperOnboardingForm = () => {
                     id={`schoolName${index}`}
                     name={`schoolName${index}`}
                     value={experience.schoolName}
+                    placeholder="Enter your school name"
                     onChange={(e) =>
                       handleChange(
                         e,
@@ -470,6 +495,7 @@ const DeveloperOnboardingForm = () => {
                   </label>
                   <input
                     type="text"
+                    placeholder="Enter Time Period"
                     id={`timePeriod${index}`}
                     name={`timePeriod${index}`}
                     value={experience.timePeriod}
@@ -480,6 +506,7 @@ const DeveloperOnboardingForm = () => {
                         index,
                         "timePeriod"
                       )
+
                     }
                     className="block w-full border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring focus:border-indigo-300"
                   />
@@ -502,18 +529,18 @@ const DeveloperOnboardingForm = () => {
           <button
             type="button"
             onClick={() => handleAddExperience("educationalExperiences")}
-            className="text-sm text-indigo-600 hover:underline focus:outline-none"
+            className="text-sm text-indigo-600 hover:underline focus:outline-none bg-green-300 py-4 rounded-lg"
           >
-            Add Experience
+            Add Education
           </button>
         </div>
         {/* Submit Button */}
         <div>
           <button
             type="submit"
-            className="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-500 focus:outline-none focus:ring focus:border-indigo-300"
+            className="bg-indigo-600 text-white py-2  w-36 rounded-md hover:bg-indigo-500 focus:outline-none focus:ring focus:border-indigo-300"
           >
-            Submit
+           {loading? <span className="flex gap-2 justify-center items-center text-center"><ImSpinner9 className="animate-spin"/>Loading...</span>:"Submit"}
           </button>
         </div>
       </form>

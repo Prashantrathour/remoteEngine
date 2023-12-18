@@ -11,10 +11,7 @@ const containerStyle = 'max-w-4xl mx-auto mt-8 p-6';
 const ClientPage = () => {
   return (
     <div>
-      <nav className={navbarStyle}>
-        <Link to="/" className="text-white">Home</Link>
-        <Link to="/login" className="ml-4">Login</Link>
-      </nav>
+     
 
       <div className={containerStyle}>
         <AddSkillsPage />

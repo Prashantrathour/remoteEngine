@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link ,useNavigate} from 'react-router-dom';
-
+import { ImSpinner9 } from "react-icons/im";
 import {ToastContainer} from "react-toastify"
 
 import { errorAlert, succesAlert } from '../Components/Notification';
 import axios from "axios"
-const Login = () => {
+const Login = ({setupdate,update}) => {
+
   const navigate=useNavigate()
- 
+ const [loading,setlooading]=useState(false)
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -45,12 +46,15 @@ const Login = () => {
     e.preventDefault();
 
     if (validateForm()) {
+      setlooading(true)
       try {
         const res=await axios.post(`${process.env.REACT_APP_API}/user/login`,{...formData,role})
-        console.log(res)
+        setlooading(false)
         localStorage.setItem("token",res.data.token)
         localStorage.setItem("email",res.data.email)
+        localStorage.setItem("role",res.data.role)
         succesAlert(res.data.message)
+        setupdate(!update)
         if(role=="developer"){
           navigate("/onboarding")
         }
@@ -58,8 +62,9 @@ const Login = () => {
           navigate("/client")
         }
 
+
       } catch (error) {
-     
+     setlooading(false)
         console.log(error.response)
         errorAlert(error?.response
           ?.data?.error||"Error")
@@ -81,7 +86,17 @@ const Login = () => {
       [name]: '',
     });
   };
-
+useEffect(()=>{
+  let email=localStorage.getItem('email');
+  let token=localStorage.getItem('token');
+  let role=localStorage.getItem('role');
+  if(email&&token&&role=="developer"){
+    navigate("/onboarding")
+  }
+  if(email&&token&&role=="client"){
+    navigate("/client")
+  }
+})
   return (
     <div className="flex min-h-full flex-col  justify-center px-6 py-12 lg:px-8  ">
       <ToastContainer/>
@@ -152,11 +167,13 @@ const Login = () => {
 
           <div>
             <button
+            disabled={loading}
               type="submit"
-              className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              className="mb-4 flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
             >
-              Sign in
+             {!loading?"Sign in":<span className='py-1.5'><ImSpinner9 className='animate-spin text-sm font-semibold leading-6 '/></span>}
             </button>
+           
           </div>
         </form>
 

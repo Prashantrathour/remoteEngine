@@ -5,9 +5,10 @@ import { Link } from 'react-router-dom';
 import {ToastContainer} from "react-toastify"
 import { errorAlert, succesAlert } from '../Components/Notification';
 import axios from "axios"
+import { ImSpinner9 } from 'react-icons/im';
 const Login = () => {
   
-  
+  const [loading,setloading]=useState(false)
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -45,12 +46,14 @@ const Login = () => {
     e.preventDefault();
 
     if (validateForm()) {
+      setloading(true);
       try {
         let res=await axios.post(`${process.env.REACT_APP_API}/user/register`,{...formData,role})
         succesAlert(res.data.message)
-        console.log(res,"success")
+        setloading(false)
       } catch (error) {
         console.log(error)
+        setloading(false)
         errorAlert(error?.response?.data?.error)
       }
     } else {
@@ -141,10 +144,11 @@ const Login = () => {
 
           <div>
             <button
+            disabled={loading}
               type="submit"
               className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
             >
-              Sign in
+               {!loading?"Create Account":<span className='py-1.5'><ImSpinner9 className='animate-spin text-sm font-semibold leading-6 '/></span>}
             </button>
           </div>
         </form>
