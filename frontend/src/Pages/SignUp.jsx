@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { register } from '../REDUX/UserAuth/action';
-import {useDispatch} from "react-redux"
+
+
 import {ToastContainer} from "react-toastify"
 import { errorAlert, succesAlert } from '../Components/Notification';
 import axios from "axios"
 const Login = () => {
-  const dispatch = useDispatch();
+  
   
   const [formData, setFormData] = useState({
     email: '',
