@@ -2,13 +2,16 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Select from "react-select";
 import { useNavigate } from "react-router-dom";
-import {ToastContainer} from "react-toastify"
+import { ToastContainer } from "react-toastify";
 import { errorAlert, succesAlert } from "../Components/Notification";
-import { ImSpinner9 } from "react-icons/im";
+import { ImSpinner11, ImSpinner9 } from "react-icons/im";
 const DeveloperOnboardingForm = () => {
   const navigate = useNavigate();
-  const [loading,setloading]=useState(false)
-  const [skillloading,skillsetloading]=useState(false)
+  const [loading, setloading] = useState(false);
+  const [loadingdev, setloadingdev] = useState(false);
+  const [onboarding, setonboarding] = useState(false);
+  const [developer, setDevelopers] = useState({});
+  const [skillloading, skillsetloading] = useState(false);
   const authToken = localStorage.getItem("token");
   const authemail = localStorage.getItem("email");
   const [formData, setFormData] = useState({
@@ -28,7 +31,6 @@ const DeveloperOnboardingForm = () => {
   });
 
   const [predefinedSkills, setPredefinedSkills] = useState([]);
- 
 
   useEffect(() => {
     // Fetch predefined skills from the backend
@@ -38,19 +40,38 @@ const DeveloperOnboardingForm = () => {
     }
     setFormData({ ...formData, email: authemail });
     const fetchSkills = async () => {
-      skillsetloading(true)
+      skillsetloading(true);
       try {
         const response = await axios.get(
           `${process.env.REACT_APP_API}/skills/get`
         );
-        skillsetloading(true)
+        skillsetloading(true);
         setPredefinedSkills(response?.data?.skills);
       } catch (error) {
         skillsetloading(false);
         console.error("Error fetching skills:", error);
       }
     };
-
+    async function fetchdeveloper() {
+      setloadingdev(true);
+      try {
+        let res = await axios.get(
+          `${process.env.REACT_APP_API}/developers/profile`,
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+          }
+        );
+        setloadingdev(false);
+        setDevelopers(res.data);
+      } catch (error) {
+        setloadingdev(false);
+        console.log(error?.response?.data?.error == "Developer not found");
+        setonboarding(true);
+      }
+    }
+    fetchdeveloper();
     fetchSkills();
   }, []);
 
@@ -58,7 +79,6 @@ const DeveloperOnboardingForm = () => {
     const { value } = e.target;
 
     if (field === "skillsUsed") {
-     
       setFormData((prevData) => ({
         ...prevData,
         [section]: prevData[section].map((exp, i) =>
@@ -66,7 +86,6 @@ const DeveloperOnboardingForm = () => {
         ),
       }));
     } else {
-    
       setFormData((prevData) => ({
         ...prevData,
         [section]:
@@ -83,8 +102,7 @@ const DeveloperOnboardingForm = () => {
   };
 
   const handleAddExperience = (section) => {
-    if(section=="professionalExperiences"){
-
+    if (section == "professionalExperiences") {
       setFormData((prevData) => ({
         ...prevData,
         [section]: [
@@ -92,7 +110,7 @@ const DeveloperOnboardingForm = () => {
           { companyName: "", techStack: "", skillsUsed: "", timePeriod: "" },
         ],
       }));
-    }else{
+    } else {
       setFormData((prevData) => ({
         ...prevData,
         [section]: [
@@ -100,7 +118,6 @@ const DeveloperOnboardingForm = () => {
           { schoolName: "", degreeName: "", timePeriod: "" },
         ],
       }));
-
     }
   };
 
@@ -125,64 +142,51 @@ const DeveloperOnboardingForm = () => {
       ),
     }));
   };
-// validate form fields
+  // validate form fields
   const validateForm = () => {
-    console.log(formData)
-  
+    console.log(formData);
+
     for (const category in formData) {
       if (Object.hasOwnProperty.call(formData, category)) {
         const categoryData = formData[category];
-  
-     
+
         if (Array.isArray(categoryData)) {
-       
           for (const item of categoryData) {
-           
             for (const property in item) {
-              if (Object.hasOwnProperty.call(item, property) && item[property] === "") {
-               
+              if (
+                Object.hasOwnProperty.call(item, property) &&
+                item[property] === ""
+              ) {
                 return false;
               }
             }
           }
         } else if (typeof categoryData === "object") {
-       
           for (const property in categoryData) {
-            if (Object.hasOwnProperty.call(categoryData, property) && categoryData[property] === "") {
-              
+            if (
+              Object.hasOwnProperty.call(categoryData, property) &&
+              categoryData[property] === ""
+            ) {
               return false;
             }
           }
         } else if (categoryData === "") {
-          
           return false;
         }
       }
     }
-  
-   
+
     return true;
   };
-  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-
     if (validateForm()) {
-       console.log( {
-        ...formData,
-        firstName: formData.personalInformation.firstName,
-        lastName: formData.personalInformation.lastName,
-        email: formData.email,
-        phoneNumber: formData.personalInformation.phoneNumber,
-        skills: formData.skills,
-        professionalExperiences: formData.professionalExperiences,
-        educationalExperiences: formData.educationalExperiences,
-      }) 
+  
       try {
-       setloading(true)
-        let res=await axios.post(
+        setloading(true);
+        let res = await axios.post(
           `${process.env.REACT_APP_API}/developers/onboarding`,
           {
             ...formData,
@@ -200,291 +204,204 @@ const DeveloperOnboardingForm = () => {
             },
           }
         );
-     succesAlert(res.data.message)
-     setloading(false)
-    } catch (error) {
-      console.error("Error during developer onboarding:", error);
-      errorAlert(error?.response?.data?.error||"something wrong")
-      setloading(false)
-      
+        succesAlert(res?.data?.message);
+        setTimeout(() => {
+          setloading(false);
+          setDevelopers(res.data)
+          
+        }, 1000);
+      } catch (error) {
+        console.error("Error during developer onboarding:", error);
+        errorAlert(error?.response?.data?.error || "something wrong");
+        setloading(false);
       }
     } else {
-      errorAlert("Please fill all details")
+      errorAlert("Please fill all details");
     }
   };
-
+  console.log(Object.keys(developer));
+  if (Object.keys(developer).length > 0) {
+    return (
+      <div className="w-full justify-center items-center text-center p-7">
+        
+        <img className="w-1/2 h-1/2 m-auto" src="https://thumbs.dreamstime.com/z/onboarding-completed-symbol-white-paper-words-wooden-model-human-shopping-cart-beautiful-orange-background-business-213273935.jpg"/>
+      </div>
+    );
+  }
   return (
     <div className="max-w-3xl mx-auto mt-8 p-6 bg-white rounded-md shadow-xl border-orange-300 select-none">
-        <ToastContainer/>
+      <ToastContainer />
       <h2 className="text-2xl font-bold mb-4">Developer Onboarding</h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Personal Information */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div className="mb-4">
-            <label
-              htmlFor="firstName"
-              className="block text-sm font-medium text-gray-600"
-            >
-              First Name
-            </label>
-            <input
-              type="text"
-              id="firstName"
-              name="firstName"
-              placeholder="FirstName"
-              value={formData.firstName}
-              onChange={(e) =>
-                handleChange(e, "personalInformation", 0, "firstName")
-              }
-              className="block w-full border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring focus:border-indigo-300"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label
-              htmlFor="lastName"
-              className="block text-sm font-medium text-gray-600"
-            >
-              Last Name
-            </label>
-            <input
-              type="text"
-              id="lastName"
-              name="lastName"
-              placeholder="LastName"
-              value={formData.lastName}
-              onChange={(e) =>
-                handleChange(e, "personalInformation", 0, "lastName")
-              }
-              className="block w-full border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring focus:border-indigo-300"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label
-              htmlFor="phoneNumber"
-              className="block text-sm font-medium text-gray-600"
-            >
-              Phone Number
-            </label>
-            <input
-              type="text"
-              placeholder="Phone Number"
-              id="phoneNumber"
-              name="phoneNumber"
-              value={formData.phoneNumber}
-              onChange={(e) =>
-                handleChange(e, "personalInformation", 0, "phoneNumber")
-              }
-              className="block w-full border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring focus:border-indigo-300"
-            />
-          </div>
-          <div className="mb-4 cursor-not-allowed select-none">
-            <label
-              htmlFor="Email"
-              className="block text-sm font-medium text-gray-600"
-            >
-              Email
-            </label>
-            <p>{formData.email}</p>
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-600">
-            Skills
-          </label>
-          <Select
-            isMulti
-            options={predefinedSkills?.map((skill) => ({
-              value: skill._id,
-              label: skill.predefinedSkills[0],
-            }))}
-            onChange={(selectedSkills) =>
-              handleSkillChange(
-                selectedSkills.map((skill) => skill.value),
-                0,
-                "personalInformation"
-              )
-            }
-          />
-        </div>
-        {/* Professional Experiences */}
-        <div className="mb-4 flex flex-col gap-5">
-          <label className="block text-sm font-medium text-gray-600 p-4 bg-yellow-200">
-            Professional Experiences
-          </label>
-          {formData.professionalExperiences.map((experience, index) => (
-            <div key={index} className="space-y-2 mb-2 border border-lime-300  shadow-lg p-3 rounded-2xl transition-all">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="mb-4">
-                  <label
-                    htmlFor={`companyName${index}`}
-                    className="block text-sm font-medium text-gray-600"
-                  >
-                    Company Name
-                  </label>
-                  <input
-                    type="text"
-                    id={`companyName${index}`}
-                    name={`companyName${index}`}
-                    value={experience.companyName}
-                    placeholder="Enter company name"
-                    onChange={(e) =>
-                      handleChange(
-                        e,
-                        "professionalExperiences",
-                        index,
-                        "companyName"
-                      )
-                    }
-                    className="block w-full border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring focus:border-indigo-300"
-                  />
-                </div>
-                <div className="mb-4">
-                  <label
-                    htmlFor={`techStack${index}`}
-                    className="block text-sm font-medium text-gray-600"
-                  >
-                    Tech Stack
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter your tech stack (,)"
-                    id={`techStack${index}`}
-                    name={`techStack${index}`}
-                    value={experience.techStack}
-                    onChange={(e) =>
-                      handleChange(
-                        e,
-                        "professionalExperiences",
-                        index,
-                        "techStack"
-                      )
-                    }
-                    className="block w-full border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring focus:border-indigo-300"
-                  />
-                </div>
-                <div className="mb-4">
-                  <label
-                    htmlFor={`skillsUsed${index}`}
-                    className="block text-sm font-medium text-gray-600"
-                  >
-                    Skills Used
-                  </label>
-                  <Select
-                    isMulti
-                    options={predefinedSkills?.map((skill) => ({
-                      value: skill._id,
-                      label: skill.predefinedSkills[0],
-                    }))}
-                    onChange={(selectedSkills) =>
-                      handleSkillChange(selectedSkills, index)
-                    }
-                  />
-                </div>
-              </div>
-              <div className="mb-4">
-                <label
-                  htmlFor={`timePeriod${index}`}
-                  className="block text-sm font-medium text-gray-600"
-                >
-                  Time Period
-                </label>
-                <input
-                placeholder="Enter your Time Period"
-                  type="text"
-                  id={`timePeriod${index}`}
-                  name={`timePeriod${index}`}
-                  value={experience.timePeriod}
-                  onChange={(e) =>
-                    handleChange(
-                      e,
-                      "professionalExperiences",
-                      index,
-                      "timePeriod"
-                    )
-                  }
-                  className="block w-full border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring focus:border-indigo-300"
-                />
-              </div>
-
-              <div className="flex items-center">
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleRemoveExperience("professionalExperiences", index)
-                  }
-                  className="text-sm text-red-600 hover:underline focus:outline-none"
-                >
-                  Remove Experience
-                </button>
-              </div>
+      {!loadingdev ? (
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Personal Information */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="mb-4">
+              <label
+                htmlFor="firstName"
+                className="block text-sm font-medium text-gray-600"
+              >
+                First Name
+              </label>
+              <input
+                type="text"
+                id="firstName"
+                name="firstName"
+                placeholder="FirstName"
+                value={formData.firstName}
+                onChange={(e) =>
+                  handleChange(e, "personalInformation", 0, "firstName")
+                }
+                className="block w-full border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring focus:border-indigo-300"
+                required
+              />
             </div>
-          ))}
-          <button
-            type="button"
-            onClick={() => handleAddExperience("professionalExperiences")}
-            className="text-sm text-indigo-600 hover:underline focus:outline-none bg-green-300 py-4 rounded-lg"
-          >
-            Add Experience
-          </button>
-        </div>
-        {/* Educational Experiences */}
-        <div className="mb-4  flex gap-5 flex-col">
-          <label className="block text-sm font-medium text-gray-600 p-4 bg-yellow-200">
-            Educational Experiences
-          </label>
-          {formData.educationalExperiences.map((experience, index) => (
-            <div key={index} className="space-y-2 mb-2 border border-lime-300  shadow-lg p-3 rounded-2xl">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="mb-4">
-                  <label
-                    htmlFor={`degreeName${index}`}
-                    className="block text-sm font-medium text-gray-600"
-                  >
-                    Degree Name
-                  </label>
-                  <input
-                    type="text"
-                    id={`degreeName${index}`}
-                    name={`degreeName${index}`}
-                    value={experience.degreeName}
-                    placeholder="Enter your degree"
-                    onChange={(e) =>
-                      handleChange(
-                        e,
-                        "educationalExperiences",
-                        index,
-                        "degreeName"
-                      )
-                    }
-                    className="block w-full border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring focus:border-indigo-300"
-                  />
-                </div>
-                <div className="mb-4">
-                  <label
-                    htmlFor={`schoolName${index}`}
-                    className="block text-sm font-medium text-gray-600"
-                  >
-                    School Name
-                  </label>
-                  <input
-                    type="text"
-                    id={`schoolName${index}`}
-                    name={`schoolName${index}`}
-                    value={experience.schoolName}
-                    placeholder="Enter your school name"
-                    onChange={(e) =>
-                      handleChange(
-                        e,
-                        "educationalExperiences",
-                        index,
-                        "schoolName"
-                      )
-                    }
-                    className="block w-full border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring focus:border-indigo-300"
-                  />
+            <div className="mb-4">
+              <label
+                htmlFor="lastName"
+                className="block text-sm font-medium text-gray-600"
+              >
+                Last Name
+              </label>
+              <input
+                type="text"
+                id="lastName"
+                name="lastName"
+                placeholder="LastName"
+                value={formData.lastName}
+                onChange={(e) =>
+                  handleChange(e, "personalInformation", 0, "lastName")
+                }
+                className="block w-full border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring focus:border-indigo-300"
+                required
+              />
+            </div>
+            <div className="mb-4">
+              <label
+                htmlFor="phoneNumber"
+                className="block text-sm font-medium text-gray-600"
+              >
+                Phone Number
+              </label>
+              <input
+                type="text"
+                placeholder="Phone Number"
+                id="phoneNumber"
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={(e) =>
+                  handleChange(e, "personalInformation", 0, "phoneNumber")
+                }
+                className="block w-full border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring focus:border-indigo-300"
+              />
+            </div>
+            <div className="mb-4 cursor-not-allowed select-none">
+              <label
+                htmlFor="Email"
+                className="block text-sm font-medium text-gray-600"
+              >
+                Email
+              </label>
+              <p>{formData.email}</p>
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-600">
+              Skills
+            </label>
+            <Select
+              isMulti
+              options={predefinedSkills?.map((skill) => ({
+                value: skill._id,
+                label: skill.predefinedSkills[0],
+              }))}
+              onChange={(selectedSkills) =>
+                handleSkillChange(
+                  selectedSkills.map((skill) => skill.value),
+                  0,
+                  "personalInformation"
+                )
+              }
+            />
+          </div>
+          {/* Professional Experiences */}
+          <div className="mb-4 flex flex-col gap-5">
+            <label className="block text-sm font-medium text-gray-600 p-4 bg-yellow-200">
+              Professional Experiences
+            </label>
+            {formData.professionalExperiences.map((experience, index) => (
+              <div
+                key={index}
+                className="space-y-2 mb-2 border border-lime-300  shadow-lg p-3 rounded-2xl transition-all"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="mb-4">
+                    <label
+                      htmlFor={`companyName${index}`}
+                      className="block text-sm font-medium text-gray-600"
+                    >
+                      Company Name
+                    </label>
+                    <input
+                      type="text"
+                      id={`companyName${index}`}
+                      name={`companyName${index}`}
+                      value={experience.companyName}
+                      placeholder="Enter company name"
+                      onChange={(e) =>
+                        handleChange(
+                          e,
+                          "professionalExperiences",
+                          index,
+                          "companyName"
+                        )
+                      }
+                      className="block w-full border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring focus:border-indigo-300"
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label
+                      htmlFor={`techStack${index}`}
+                      className="block text-sm font-medium text-gray-600"
+                    >
+                      Tech Stack
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Enter your tech stack (,)"
+                      id={`techStack${index}`}
+                      name={`techStack${index}`}
+                      value={experience.techStack}
+                      onChange={(e) =>
+                        handleChange(
+                          e,
+                          "professionalExperiences",
+                          index,
+                          "techStack"
+                        )
+                      }
+                      className="block w-full border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring focus:border-indigo-300"
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label
+                      htmlFor={`skillsUsed${index}`}
+                      className="block text-sm font-medium text-gray-600"
+                    >
+                      Skills Used
+                    </label>
+                    <Select
+                      isMulti
+                      options={predefinedSkills?.map((skill) => ({
+                        value: skill._id,
+                        label: skill.predefinedSkills[0],
+                      }))}
+                      onChange={(selectedSkills) =>
+                        handleSkillChange(selectedSkills, index)
+                      }
+                    />
+                  </div>
                 </div>
                 <div className="mb-4">
                   <label
@@ -494,56 +411,170 @@ const DeveloperOnboardingForm = () => {
                     Time Period
                   </label>
                   <input
+                    placeholder="Enter your Time Period"
                     type="text"
-                    placeholder="Enter Time Period"
                     id={`timePeriod${index}`}
                     name={`timePeriod${index}`}
                     value={experience.timePeriod}
                     onChange={(e) =>
                       handleChange(
                         e,
-                        "educationalExperiences",
+                        "professionalExperiences",
                         index,
                         "timePeriod"
                       )
-
                     }
                     className="block w-full border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring focus:border-indigo-300"
                   />
                 </div>
-              </div>
-              <div className="flex items-center">
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleRemoveExperience("educationalExperiences", index)
-                  }
-                  className="text-sm text-red-600 hover:underline focus:outline-none"
-                >
-                  Remove Education
-                </button>
-              </div>
-            </div>
-          ))}
 
-          <button
-            type="button"
-            onClick={() => handleAddExperience("educationalExperiences")}
-            className="text-sm text-indigo-600 hover:underline focus:outline-none bg-green-300 py-4 rounded-lg"
-          >
-            Add Education
-          </button>
-        </div>
-        {/* Submit Button */}
-        <div>
-          <button
-            type="submit"
-            className="bg-indigo-600 text-white py-2  w-36 rounded-md hover:bg-indigo-500 focus:outline-none focus:ring focus:border-indigo-300"
-          >
-           {loading? <span className="flex gap-2 justify-center items-center text-center"><ImSpinner9 className="animate-spin"/>Loading...</span>:"Submit"}
-          </button>
-        </div>
-      </form>
+                <div className="flex items-center">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleRemoveExperience("professionalExperiences", index)
+                    }
+                    className="text-sm text-red-600 hover:underline focus:outline-none"
+                  >
+                    Remove Experience
+                  </button>
+                </div>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => handleAddExperience("professionalExperiences")}
+              className="text-sm text-indigo-600 hover:underline focus:outline-none bg-green-300 py-4 rounded-lg"
+            >
+              Add Experience
+            </button>
+          </div>
+          {/* Educational Experiences */}
+          <div className="mb-4  flex gap-5 flex-col">
+            <label className="block text-sm font-medium text-gray-600 p-4 bg-yellow-200">
+              Educational Experiences
+            </label>
+            {formData.educationalExperiences.map((experience, index) => (
+              <div
+                key={index}
+                className="space-y-2 mb-2 border border-lime-300  shadow-lg p-3 rounded-2xl"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="mb-4">
+                    <label
+                      htmlFor={`degreeName${index}`}
+                      className="block text-sm font-medium text-gray-600"
+                    >
+                      Degree Name
+                    </label>
+                    <input
+                      type="text"
+                      id={`degreeName${index}`}
+                      name={`degreeName${index}`}
+                      value={experience.degreeName}
+                      placeholder="Enter your degree"
+                      onChange={(e) =>
+                        handleChange(
+                          e,
+                          "educationalExperiences",
+                          index,
+                          "degreeName"
+                        )
+                      }
+                      className="block w-full border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring focus:border-indigo-300"
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label
+                      htmlFor={`schoolName${index}`}
+                      className="block text-sm font-medium text-gray-600"
+                    >
+                      School Name
+                    </label>
+                    <input
+                      type="text"
+                      id={`schoolName${index}`}
+                      name={`schoolName${index}`}
+                      value={experience.schoolName}
+                      placeholder="Enter your school name"
+                      onChange={(e) =>
+                        handleChange(
+                          e,
+                          "educationalExperiences",
+                          index,
+                          "schoolName"
+                        )
+                      }
+                      className="block w-full border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring focus:border-indigo-300"
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label
+                      htmlFor={`timePeriod${index}`}
+                      className="block text-sm font-medium text-gray-600"
+                    >
+                      Time Period
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Enter Time Period"
+                      id={`timePeriod${index}`}
+                      name={`timePeriod${index}`}
+                      value={experience.timePeriod}
+                      onChange={(e) =>
+                        handleChange(
+                          e,
+                          "educationalExperiences",
+                          index,
+                          "timePeriod"
+                        )
+                      }
+                      className="block w-full border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring focus:border-indigo-300"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleRemoveExperience("educationalExperiences", index)
+                    }
+                    className="text-sm text-red-600 hover:underline focus:outline-none"
+                  >
+                    Remove Education
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={() => handleAddExperience("educationalExperiences")}
+              className="text-sm text-indigo-600 hover:underline focus:outline-none bg-green-300 py-4 rounded-lg"
+            >
+              Add Education
+            </button>
+          </div>
+          {/* Submit Button */}
+          <div>
+            <button
+              type="submit"
+              className="bg-indigo-600 text-white py-2  w-36 rounded-md hover:bg-indigo-500 focus:outline-none focus:ring focus:border-indigo-300"
+            >
+              {loading ? (
+                <span className="flex gap-2 justify-center items-center text-center">
+                  <ImSpinner9 className="animate-spin" />
+                  Loading...
+                </span>
+              ) : (
+                "Submit"
+              )}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <div className="flex justify-center items-center p-7">Please Wait ....<ImSpinner11 className="animate-spin" /></div>
+      )}
     </div>
   );
 };
