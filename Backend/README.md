@@ -12,6 +12,16 @@ The Developer Onboarding Application is designed to facilitate the onboarding pr
 - **MongoDB:** NoSQL database for storing developer and related data.
 - **EncryptJS:** Used for encrypting sensitive information.
 - **JSON Web Token (JWT):** Token-based authentication for secure communication.
+  ### Dependancies
+  ```javascript
+  
+     `npm install mongoose`
+     `npm install express`
+     `npm install jsonwebtoken`
+     `npm install bcryptjs`
+     `npm install dotenv`
+     `npm install cors`
+     `npm install node`
 
 ## Project Structure
 
